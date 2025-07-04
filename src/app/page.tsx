@@ -4,11 +4,22 @@ import React, { useState } from 'react';
 import ElmsFormSection from '@/components/ElmsFormSection';
 import { validateElmsData, formatValidationErrors } from '@/components/validation';
 
+// Define types for form data structure
+interface FormData {
+  [key: string]: SectionData;
+}
+
+interface SectionData {
+  [key: string]: SectionValue;
+}
+
+type SectionValue = string | number | boolean | SectionValue[] | SectionData | null | undefined;
+
 export default function Home() {
-  const [formData, setFormData] = useState<{ [key: string]: any }>({});
+  const [formData, setFormData] = useState<FormData>({});
   const [validationErrors, setValidationErrors] = useState<string>('');
 
-  const handleFormSubmit = (data: any) => {
+  const handleFormSubmit = (data: FormData) => {
     const validation = validateElmsData(data);
     
     if (validation.isValid) {
@@ -22,7 +33,7 @@ export default function Home() {
     }
   };
 
-  const handleSectionChange = (sectionKey: string, data: any) => {
+  const handleSectionChange = (sectionKey: string, data: SectionData) => {
     setFormData(prev => ({
       ...prev,
       [sectionKey]: data
@@ -78,7 +89,7 @@ export default function Home() {
                         key={sectionKey}
                         sectionKey={sectionKey}
                         onSectionChange={handleSectionChange}
-                        initialData={formData[sectionKey] || {}}
+                        initialData={(formData[sectionKey] && typeof formData[sectionKey] === 'object' && !Array.isArray(formData[sectionKey])) ? formData[sectionKey] : {}}
                       />
                     </div>
                   </details>

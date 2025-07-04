@@ -10,7 +10,42 @@ export interface ValidationResult {
   errors: ValidationError[];
 }
 
-export function validateElmsData(data: any): ValidationResult {
+// Define types for form data structure
+interface FormData {
+  [key: string]: FormValue;
+}
+
+type FormValue = string | number | boolean | FormValue[] | FormData | null | undefined;
+
+interface SchemaProperty {
+  type: string;
+  description?: string;
+  enum?: string[];
+  format?: string;
+  minimum?: number;
+  maximum?: number;
+  items?: SchemaProperty;
+  properties?: { [key: string]: SchemaProperty };
+  required?: string[];
+}
+
+interface CopyInformation {
+  copyId?: string | number;
+}
+
+interface EntityInformation {
+  entityName?: string;
+  entityId?: string | number;
+  role?: string;
+}
+
+interface ExternalLinkInformation {
+  externalLinkName?: string;
+  externalLinkId?: string | number;
+  externalLinkUrl?: string;
+}
+
+export function validateElmsData(data: FormData): ValidationResult {
   const errors: ValidationError[] = [];
   
   // Validate required fields at the root level
@@ -26,11 +61,12 @@ export function validateElmsData(data: any): ValidationResult {
   }
   
   // Validate workInformation required fields
-  if (data.workInformation) {
-    const workInfoSchema = (schema.properties as any).workInformation;
+  if (data.workInformation && typeof data.workInformation === 'object' && !Array.isArray(data.workInformation)) {
+    const workInfoSchema = (schema.properties as Record<string, SchemaProperty>).workInformation;
+    const workInfo = data.workInformation as FormData;
     if (workInfoSchema.required) {
       workInfoSchema.required.forEach((field: string) => {
-        if (!data.workInformation[field]) {
+        if (!workInfo[field]) {
           errors.push({
             field: `workInformation.${field}`,
             message: `${field} is required in work information`
@@ -41,11 +77,12 @@ export function validateElmsData(data: any): ValidationResult {
   }
   
   // Validate versionInformation required fields
-  if (data.versionInformation) {
-    const versionInfoSchema = (schema.properties as any).versionInformation;
+  if (data.versionInformation && typeof data.versionInformation === 'object' && !Array.isArray(data.versionInformation)) {
+    const versionInfoSchema = (schema.properties as Record<string, SchemaProperty>).versionInformation;
+    const versionInfo = data.versionInformation as FormData;
     if (versionInfoSchema.required) {
       versionInfoSchema.required.forEach((field: string) => {
-        if (!data.versionInformation[field]) {
+        if (!versionInfo[field]) {
           errors.push({
             field: `versionInformation.${field}`,
             message: `${field} is required in version information`
@@ -72,7 +109,7 @@ export function validateElmsData(data: any): ValidationResult {
   
   urlFields.forEach(field => {
     const value = getNestedValue(data, field);
-    if (value && !isValidUrl(value)) {
+    if (value && typeof value === 'string' && !isValidUrl(value)) {
       errors.push({
         field,
         message: `${field} must be a valid URL`
@@ -89,7 +126,7 @@ export function validateElmsData(data: any): ValidationResult {
   
   yearFields.forEach(field => {
     const value = getNestedValue(data, field);
-    if (value && (value < 1950 || value > 2100)) {
+    if (value && typeof value === 'number' && (value < 1950 || value > 2100)) {
       errors.push({
         field,
         message: `${field} must be between 1950 and 2100`
@@ -99,7 +136,7 @@ export function validateElmsData(data: any): ValidationResult {
   
   // Validate arrays
   if (data.copyInformation && Array.isArray(data.copyInformation)) {
-    data.copyInformation.forEach((copy: any, index: number) => {
+    (data.copyInformation as CopyInformation[]).forEach((copy: CopyInformation, index: number) => {
       if (!copy.copyId) {
         errors.push({
           field: `copyInformation[${index}].copyId`,
@@ -110,7 +147,7 @@ export function validateElmsData(data: any): ValidationResult {
   }
   
   if (data.entityInformation && Array.isArray(data.entityInformation)) {
-    data.entityInformation.forEach((entity: any, index: number) => {
+    (data.entityInformation as EntityInformation[]).forEach((entity: EntityInformation, index: number) => {
       if (!entity.entityName) {
         errors.push({
           field: `entityInformation[${index}].entityName`,
@@ -133,7 +170,7 @@ export function validateElmsData(data: any): ValidationResult {
   }
   
   if (data.worksExternalLinkInformation && Array.isArray(data.worksExternalLinkInformation)) {
-    data.worksExternalLinkInformation.forEach((link: any, index: number) => {
+    (data.worksExternalLinkInformation as ExternalLinkInformation[]).forEach((link: ExternalLinkInformation, index: number) => {
       if (!link.externalLinkName) {
         errors.push({
           field: `worksExternalLinkInformation[${index}].externalLinkName`,
@@ -161,9 +198,12 @@ export function validateElmsData(data: any): ValidationResult {
   };
 }
 
-function getNestedValue(obj: any, path: string): any {
-  return path.split('.').reduce((current, key) => {
-    return current && current[key] !== undefined ? current[key] : undefined;
+function getNestedValue(obj: FormData, path: string): FormValue {
+  return path.split('.').reduce((current: FormValue, key: string) => {
+    if (current && typeof current === 'object' && !Array.isArray(current)) {
+      return (current as FormData)[key];
+    }
+    return undefined;
   }, obj);
 }
 
@@ -171,7 +211,13 @@ function isValidUrl(string: string): boolean {
   try {
     new URL(string);
     return true;
-  } catch (_) {
+  } catch (_error: unknown) {
+    // Show the error in the console for debugging purposes.
+    // Check the error type and log it if necessary
+    if (_error instanceof Error) {
+        console.error(`Invalid URL: ${_error.message}`);
+    }
+    // We don't need to log the error for validation purposes
     return false;
   }
 }

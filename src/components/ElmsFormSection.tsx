@@ -19,9 +19,15 @@ const generateNumericId = (): number => {
 
 interface FormSectionProps {
   sectionKey: string;
-  onSectionChange?: (sectionKey: string, data: any) => void;
-  initialData?: any;
+  onSectionChange?: (sectionKey: string, data: SectionData) => void;
+  initialData?: SectionData;
 }
+
+interface SectionData {
+  [key: string]: SectionValue;
+}
+
+type SectionValue = string | number | boolean | SectionValue[] | SectionData | null | undefined;
 
 interface SchemaProperty {
   type: string;
@@ -39,7 +45,7 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
   const [sectionData, setSectionData] = useState(initialData);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   
-  const sectionSchema = (schema.properties as any)[sectionKey] as SchemaProperty;
+  const sectionSchema = (schema.properties as Record<string, SchemaProperty>)[sectionKey] as SchemaProperty;
   
   // Generate UUID for workId if this is the workInformation section and workId doesn't exist
   useEffect(() => {
@@ -54,22 +60,22 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
         onSectionChange(sectionKey, newData);
       }
     }
-  }, [sectionKey, sectionData.workId, onSectionChange, sectionSchema.properties]);
+  }, [sectionData, sectionKey, sectionData.workId, onSectionChange, sectionSchema.properties]);
   
   if (!sectionSchema) {
     return <div>Section not found</div>;
   }
 
-  const updateValue = (path: string, value: any) => {
-    const newData = { ...sectionData };
+  const updateValue = (path: string, value: SectionValue) => {
+    const newData: SectionData = { ...sectionData };
     const keys = path.split('.');
-    let current = newData;
+    let current: SectionData = newData;
     
     for (let i = 0; i < keys.length - 1; i++) {
-      if (!current[keys[i]]) {
+      if (!current[keys[i]] || typeof current[keys[i]] !== 'object') {
         current[keys[i]] = {};
       }
-      current = current[keys[i]];
+      current = current[keys[i]] as SectionData;
     }
     
     current[keys[keys.length - 1]] = value;
@@ -85,13 +91,15 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
     }
   };
 
-  const getValue = (path: string) => {
+  const getValue = (path: string): SectionValue => {
     const keys = path.split('.');
-    let current = sectionData;
+    let current: SectionValue = sectionData;
     
     for (const key of keys) {
-      if (current === null || current === undefined) return undefined;
-      current = current[key];
+      if (current === null || current === undefined || typeof current !== 'object') {
+        return undefined;
+      }
+      current = (current as SectionData)[key];
     }
     
     return current;
@@ -132,9 +140,11 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
               {renderLabel()}
               <select
                 id={fieldId}
-                value={value || ''}
+                value={typeof value === 'string' ? value : ''}
                 onChange={(e) => updateValue(path, e.target.value)}
                 className={fieldClasses}
+                disabled={key === 'workId'}
+                style={key === 'workId' ? { backgroundColor: '#f9fafb', cursor: 'not-allowed' } : {}}
               >
                 <option value="">Select an option</option>
                 {property.enum.map((option) => (
@@ -143,6 +153,11 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
                   </option>
                 ))}
               </select>
+              {key === 'workId' && (
+                <p className="mt-1 text-xs text-gray-500">
+                  This ID is automatically generated and cannot be changed
+                </p>
+              )}
               {renderError()}
             </div>
           );
@@ -155,11 +170,18 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
               <input
                 id={fieldId}
                 type="url"
-                value={value || ''}
+                value={typeof value === 'string' ? value : ''}
                 onChange={(e) => updateValue(path, e.target.value)}
                 placeholder="https://example.com"
                 className={fieldClasses}
+                readOnly={key === 'workId'}
+                style={key === 'workId' ? { backgroundColor: '#f9fafb', cursor: 'not-allowed' } : {}}
               />
+              {key === 'workId' && (
+                <p className="mt-1 text-xs text-gray-500">
+                  This ID is automatically generated and cannot be changed
+                </p>
+              )}
               {renderError()}
             </div>
           );
@@ -172,10 +194,17 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
               <input
                 id={fieldId}
                 type="date"
-                value={value || ''}
+                value={typeof value === 'string' ? value : ''}
                 onChange={(e) => updateValue(path, e.target.value)}
                 className={fieldClasses}
+                readOnly={key === 'workId'}
+                style={key === 'workId' ? { backgroundColor: '#f9fafb', cursor: 'not-allowed' } : {}}
               />
+              {key === 'workId' && (
+                <p className="mt-1 text-xs text-gray-500">
+                  This ID is automatically generated and cannot be changed
+                </p>
+              )}
               {renderError()}
             </div>
           );
@@ -187,7 +216,7 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
             <input
               id={fieldId}
               type="text"
-              value={value || ''}
+              value={typeof value === 'string' ? value : ''}
               onChange={(e) => updateValue(path, e.target.value)}
               className={fieldClasses}
               readOnly={key === 'workId'}
@@ -209,8 +238,8 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
             <input
               id={fieldId}
               type="number"
-              value={value || ''}
-              onChange={(e) => updateValue(path, parseInt(e.target.value) || '')}
+              value={typeof value === 'number' ? value : ''}
+              onChange={(e) => updateValue(path, parseInt(e.target.value) || 0)}
               min={property.minimum}
               max={property.maximum}
               className={fieldClasses}
@@ -233,7 +262,7 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
               <input
                 id={fieldId}
                 type="checkbox"
-                checked={value || false}
+                checked={typeof value === 'boolean' ? value : false}
                 onChange={(e) => updateValue(path, e.target.checked)}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
@@ -250,17 +279,17 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
         );
 
       case 'array':
-        const arrayValue = value || [];
+        const arrayValue = Array.isArray(value) ? value : [];
         
         return (
           <div key={path} className="mb-6">
             {renderLabel()}
             <div className="border rounded-md p-4 bg-gray-50">
-              {arrayValue.map((item: any, index: number) => (
+              {arrayValue.map((item: SectionValue, index: number) => (
                 <div key={index} className="flex items-center mb-2">
                   <input
                     type="text"
-                    value={item || ''}
+                    value={typeof item === 'string' ? item : ''}
                     onChange={(e) => {
                       const newArray = [...arrayValue];
                       newArray[index] = e.target.value;
@@ -271,7 +300,7 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
                   <button
                     type="button"
                     onClick={() => {
-                      const newArray = arrayValue.filter((_: any, i: number) => i !== index);
+                      const newArray = arrayValue.filter((_: SectionValue, i: number) => i !== index);
                       updateValue(path, newArray);
                     }}
                     className="ml-2 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
@@ -301,7 +330,7 @@ export default function ElmsFormSection({ sectionKey, onSectionChange, initialDa
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div>
       {sectionSchema.description && (
         <p className="text-gray-600 mb-4">{sectionSchema.description}</p>
       )}

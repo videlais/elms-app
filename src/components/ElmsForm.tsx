@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import schema from './elms-schema.json';
 
 interface FormData {
-  [key: string]: any;
+  [key: string]: FormValue;
 }
+
+type FormValue = string | number | boolean | FormValue[] | FormData | null | undefined;
 
 interface SchemaProperty {
   type: string;
@@ -24,21 +26,35 @@ interface ElmsFormProps {
   initialData?: FormData;
 }
 
+// Simple UUID generator function
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+// Generate a unique numeric ID for integer fields
+const generateNumericId = (): number => {
+  return Math.floor(Math.random() * 1000000) + 1;
+};
+
 export default function ElmsForm({ onSubmit, initialData = {} }: ElmsFormProps) {
   const [formData, setFormData] = useState<FormData>(initialData);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const updateFormData = useCallback((path: string, value: any) => {
+  const updateFormData = useCallback((path: string, value: FormValue) => {
     setFormData(prev => {
       const newData = { ...prev };
       const keys = path.split('.');
-      let current = newData;
+      let current: FormData = newData;
       
       for (let i = 0; i < keys.length - 1; i++) {
-        if (!current[keys[i]]) {
+        if (!current[keys[i]] || typeof current[keys[i]] !== 'object') {
           current[keys[i]] = {};
         }
-        current = current[keys[i]];
+        current = current[keys[i]] as FormData;
       }
       
       current[keys[keys.length - 1]] = value;
@@ -51,26 +67,33 @@ export default function ElmsForm({ onSubmit, initialData = {} }: ElmsFormProps) 
     }
   }, [errors]);
 
-  const getValueFromPath = (path: string): any => {
+  const getValueFromPath = (path: string): FormValue => {
     const keys = path.split('.');
-    let current = formData;
+    let current: FormValue = formData;
     
     for (const key of keys) {
-      if (current === null || current === undefined) return undefined;
-      current = current[key];
+      if (current === null || current === undefined || typeof current !== 'object') {
+        return undefined;
+      }
+      current = (current as FormData)[key];
     }
     
     return current;
   };
 
-  const validateRequired = (property: SchemaProperty, path: string): boolean => {
-    const value = getValueFromPath(path);
-    if (!value && property.required) {
-      setErrors(prev => ({ ...prev, [path]: 'This field is required' }));
-      return false;
+  // Add automatic workId generation
+  useEffect(() => {
+    if (!formData.workInformation || !(formData.workInformation as FormData).workId) {
+      // Check if workId should be a string or integer based on schema
+      const workInfoSchema = (schema.properties as Record<string, SchemaProperty>).workInformation;
+      const workIdProperty = workInfoSchema?.properties?.workId;
+      
+      if (workIdProperty) {
+        const newWorkId = workIdProperty.type === 'integer' ? generateNumericId() : generateUUID();
+        updateFormData('workInformation.workId', newWorkId);
+      }
     }
-    return true;
-  };
+  }, [formData.workInformation, updateFormData]);
 
   const renderField = (key: string, property: SchemaProperty, path: string = key, level: number = 0): React.ReactNode => {
     const fieldId = `field-${path}`;
@@ -107,9 +130,11 @@ export default function ElmsForm({ onSubmit, initialData = {} }: ElmsFormProps) 
               {renderLabel()}
               <select
                 id={fieldId}
-                value={value || ''}
+                value={typeof value === 'string' ? value : ''}
                 onChange={(e) => updateFormData(path, e.target.value)}
                 className={fieldClasses}
+                disabled={key === 'workId'}
+                style={key === 'workId' ? { backgroundColor: '#f9fafb', cursor: 'not-allowed' } : {}}
               >
                 <option value="">Select an option</option>
                 {property.enum.map((option) => (
@@ -118,6 +143,11 @@ export default function ElmsForm({ onSubmit, initialData = {} }: ElmsFormProps) 
                   </option>
                 ))}
               </select>
+              {key === 'workId' && (
+                <p className="mt-1 text-xs text-gray-500">
+                  This ID is automatically generated and cannot be changed
+                </p>
+              )}
               {renderError()}
             </div>
           );
@@ -130,11 +160,18 @@ export default function ElmsForm({ onSubmit, initialData = {} }: ElmsFormProps) 
               <input
                 id={fieldId}
                 type="url"
-                value={value || ''}
+                value={typeof value === 'string' ? value : ''}
                 onChange={(e) => updateFormData(path, e.target.value)}
                 placeholder="https://example.com"
                 className={fieldClasses}
+                readOnly={key === 'workId'}
+                style={key === 'workId' ? { backgroundColor: '#f9fafb', cursor: 'not-allowed' } : {}}
               />
+              {key === 'workId' && (
+                <p className="mt-1 text-xs text-gray-500">
+                  This ID is automatically generated and cannot be changed
+                </p>
+              )}
               {renderError()}
             </div>
           );
@@ -147,10 +184,17 @@ export default function ElmsForm({ onSubmit, initialData = {} }: ElmsFormProps) 
               <input
                 id={fieldId}
                 type="date"
-                value={value || ''}
+                value={typeof value === 'string' ? value : ''}
                 onChange={(e) => updateFormData(path, e.target.value)}
                 className={fieldClasses}
+                readOnly={key === 'workId'}
+                style={key === 'workId' ? { backgroundColor: '#f9fafb', cursor: 'not-allowed' } : {}}
               />
+              {key === 'workId' && (
+                <p className="mt-1 text-xs text-gray-500">
+                  This ID is automatically generated and cannot be changed
+                </p>
+              )}
               {renderError()}
             </div>
           );
@@ -162,10 +206,17 @@ export default function ElmsForm({ onSubmit, initialData = {} }: ElmsFormProps) 
             <input
               id={fieldId}
               type="text"
-              value={value || ''}
+              value={typeof value === 'string' ? value : ''}
               onChange={(e) => updateFormData(path, e.target.value)}
               className={fieldClasses}
+              readOnly={key === 'workId'}
+              style={key === 'workId' ? { backgroundColor: '#f9fafb', cursor: 'not-allowed' } : {}}
             />
+            {key === 'workId' && (
+              <p className="mt-1 text-xs text-gray-500">
+                This ID is automatically generated and cannot be changed
+              </p>
+            )}
             {renderError()}
           </div>
         );
@@ -177,12 +228,19 @@ export default function ElmsForm({ onSubmit, initialData = {} }: ElmsFormProps) 
             <input
               id={fieldId}
               type="number"
-              value={value || ''}
-              onChange={(e) => updateFormData(path, parseInt(e.target.value) || '')}
+              value={typeof value === 'number' ? value : ''}
+              onChange={(e) => updateFormData(path, parseInt(e.target.value) || 0)}
               min={property.minimum}
               max={property.maximum}
               className={fieldClasses}
+              readOnly={key === 'workId'}
+              style={key === 'workId' ? { backgroundColor: '#f9fafb', cursor: 'not-allowed' } : {}}
             />
+            {key === 'workId' && (
+              <p className="mt-1 text-xs text-gray-500">
+                This ID is automatically generated and cannot be changed
+              </p>
+            )}
             {renderError()}
           </div>
         );
@@ -194,7 +252,7 @@ export default function ElmsForm({ onSubmit, initialData = {} }: ElmsFormProps) 
               <input
                 id={fieldId}
                 type="checkbox"
-                checked={value || false}
+                checked={typeof value === 'boolean' ? value : false}
                 onChange={(e) => updateFormData(path, e.target.checked)}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
@@ -211,18 +269,18 @@ export default function ElmsForm({ onSubmit, initialData = {} }: ElmsFormProps) 
         );
 
       case 'array':
-        const arrayValue = value || [];
+        const arrayValue = Array.isArray(value) ? value : [];
         
         return (
           <div key={path} className="mb-6">
             {renderLabel()}
             <div className="border rounded-md p-4 bg-gray-50">
-              {arrayValue.map((item: any, index: number) => (
+              {arrayValue.map((item: FormValue, index: number) => (
                 <div key={index} className="flex items-center mb-2">
                   {property.items?.type === 'string' ? (
                     <input
                       type="text"
-                      value={item || ''}
+                      value={typeof item === 'string' ? item : ''}
                       onChange={(e) => {
                         const newArray = [...arrayValue];
                         newArray[index] = e.target.value;
@@ -238,7 +296,7 @@ export default function ElmsForm({ onSubmit, initialData = {} }: ElmsFormProps) 
                   <button
                     type="button"
                     onClick={() => {
-                      const newArray = arrayValue.filter((_: any, i: number) => i !== index);
+                      const newArray = arrayValue.filter((_: FormValue, i: number) => i !== index);
                       updateFormData(path, newArray);
                     }}
                     className="ml-2 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
