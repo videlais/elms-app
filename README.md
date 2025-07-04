@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ELMS Form Application
 
-## Getting Started
+This application provides React components for handling the Extended eLectronic Metadata Schema (ELMS) form inputs based on the JSON schema.
 
-First, run the development server:
+An example can be found here: [https://videlais.github.io/elms-app/](https://videlais.github.io/elms-app/).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Components
+
+### `<ElmsForm />`
+
+A comprehensive form component that renders all fields from the ELMS schema in a single form.
+
+**Features:**
+
+- Dynamically generates form fields based on the schema
+- Handles all data types: string, integer, boolean, array, object
+- Supports enums, URLs, dates, and complex nested objects
+- Built-in validation for required fields
+- Responsive design with Tailwind CSS
+
+**Usage:**
+
+```tsx
+import ElmsForm from '@/components/ElmsForm';
+
+function MyPage() {
+  const handleSubmit = (data) => {
+    console.log('Form data:', data);
+    // Process the form data
+  };
+
+  return (
+    <ElmsForm 
+      onSubmit={handleSubmit}
+      initialData={{}} // Optional initial data
+    />
+  );
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### `<ElmsFormSection />`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+A component that renders individual sections of the ELMS schema, useful for breaking down the large form into manageable pieces.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Features:**
 
-## Learn More
+- Renders specific sections like 'workInformation', 'versionInformation', etc.
+- Allows for modular form building
+- Real-time data updates with callbacks
+- Same field types support as ElmsForm
 
-To learn more about Next.js, take a look at the following resources:
+**Usage:**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```tsx
+import ElmsFormSection from '@/components/ElmsFormSection';
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+function MyPage() {
+  const handleSectionChange = (sectionKey, data) => {
+    console.log(`Section ${sectionKey} updated:`, data);
+  };
 
-## Deploy on Vercel
+  return (
+    <ElmsFormSection
+      sectionKey="workInformation"
+      onSectionChange={handleSectionChange}
+      initialData={{}}
+    />
+  );
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Validation Utility
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+A utility for validating ELMS form data against the schema requirements.
+
+**Features:**
+
+- Validates required fields
+- Checks URL formats
+- Validates year ranges
+- Validates array items
+- Returns detailed error messages
+
+**Usage:**
+
+```tsx
+import { validateElmsData, formatValidationErrors } from '@/components/validation';
+
+const validation = validateElmsData(formData);
+if (!validation.isValid) {
+  const errorMessage = formatValidationErrors(validation.errors);
+  console.error('Validation errors:', errorMessage);
+}
+```
+
+## Schema Support
+
+The components support all field types defined in the ELMS schema:
+
+### Basic Types
+
+- **String**: Text inputs, with special handling for URLs and dates
+- **Integer**: Number inputs with min/max validation
+- **Boolean**: Checkboxes
+
+### Complex Types
+
+- **Enum**: Dropdown selects with predefined options
+- **Array**: Dynamic lists with add/remove functionality
+- **Object**: Nested form sections
+
+### Special Formats
+
+- **URI**: URL inputs with validation
+- **Date**: Date picker inputs
+- **Email**: Email inputs (if specified in schema)

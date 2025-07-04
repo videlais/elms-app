@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/elms-schema.json",
+  "title": "Extended eLectronic Metadata Schema (ELMS)",
+  "description": "Schema for electronic literature metadata",
+  "type": "object",
+  "properties": {
+    "workInformation": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Names the specific work to which the entry refers"
+        },
+         "workDescription": {
+          "type": "string",
+          "description": "Provides detailed information about a work"
+        },
+        "workId": {
+          "type": "string",
+          "description": "A generated unique identifier for a work within the collection",
+          "readOnly": true
+        }
+      },
+      "required": ["title", "workDescription"]
+    },
+    "versionInformation": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "A version of a work is different from other versions in its code and it thus provides a distinct experience"
+        },
+        "versionNumber": {
+          "type": "string",
+          "description": "Identifies the specific version of a work"
+        },
+        "versionLetter": {
+          "type": "string",
+          "description": "Modifies version number where needed in order to identify small differences between versions"
+        },
+        "publicationMonth": {
+          "type": "string",
+          "description": "Identifies the month or season in which a version of a work was published"
+        },
+        "publicationYear": {
+          "type": "integer",
+          "minimum": 1950,
+          "maximum": 2100,
+          "description": "Identifies the year in which a version of a work was published from 1950 to 2100"
+        },
+        "softwareDependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Identifies software platforms, programs, and standards required to access and experience the work. If the work is designed for a specific operating system such as Windows, macOS, or iOS, that should be specified here. For example, a work may require a web browser, a specific version of Adobe Flash, or a particular game engine."
+        },
+        "hardwareDependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Identifies the kind of computing device and its onboard components required to access and experience the work. For example, a work may require a desktop computer with a graphics card or a mobile device with a touchscreen."
+        },
+        "peripheralDependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Describes additional hardware not integral to the ordinary function of the original computing device"
+        },
+         "authoringPlatform": {
+          "type": "string",
+          "description": "Describes the primary digital tool used in the production of a work"
+        },
+        "computerLanguages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Describes relevant programming languages used in the production of a work. For example, a work may be written in JavaScript, Python, or C++. If the language is unknown, the tool used to create the work may be specified instead such as Twine, Unity, or Processing."
+        },
+        "genres": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Describes the artistic genre(s) of a work"
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Identifies the oral or written language(s) used in creation and/or translation of a work"
+        }
+      },
+      "required": ["versionId"]
+    },
+    "accessibilityInformation": {
+      "type": "object",
+      "properties": {
+        "contentTiming": {
+          "type": "string",
+          "enum": ["fleeting content", "rapidly moving content"],
+          "description": "Describes the speed of a work's content"
+        },
+        "textFormat": {
+          "type": "string",
+          "enum": ["italics", "light fonts", "moving text", "other inaccessible text", "rasterized text", "sans-serif fonts", "serif fonts", "script fonts", "short reading time", "small fonts"],
+          "description": "Describes how a work implements font families, font size, and effects"
+        },
+        "colorAndContrast": {
+          "type": "string",
+          "enum": ["color impacts navigation", "color impacts content", "low contrast (occasional)", "low contrast (frequent)", "low contrast (throughout)", "visual noise"],
+          "description": "Attends to partial visual disability and color blindness"
+        },
+        "visualImpact": {
+          "type": "string",
+          "enum": ["sudden visual transition(s)", "flashing lights hazard", "blinking lights hazard"],
+          "description": "Describes visual elements that may startle, surprise, or be hazardous for visitors"
+        },
+        "auditory": {
+          "type": "string",
+          "enum": ["sudden sounds", "inconsistent volume", "high-pitch sounds", "low-pitch sounds"],
+          "description": "Describes sounds produced by the work"
+        },
+        "touch": {
+          "type": "string",
+          "enum": ["capacitive touchscreen", "cursor click", "cursor movement", "text input", "physical buttons (mouse)", "physical buttons (other)", "joystick(s)", "directional input", "physical dial(s)", "physical switch(es)", "cursor drag", "persistent grip", "other"],
+          "description": "Describes how visitors interface with the work physically by making contact with screens, buttons, dials, etc."
+        },
+        "hapticFeedback": {
+          "type": "string",
+          "enum": ["adaptive input", "mobile device (vibration)", "controller (vibration)", "haptic gloves", "full-body haptics"],
+          "description": "Describes how the work registers meaningful physical feedback in a visitor's body"
+        },
+        "repetitiveMotion": {
+          "type": "string",
+          "enum": ["frequent repetitive key presses", "frequent repetitive gestures", "other repetitive motion"],
+          "description": "Describes works that require repetitive physical input from visitors"
+        },
+        "movementAndGesture": {
+          "type": "string",
+          "enum": ["eye movement", "head tracking", "spatial peripheral manipulation", "interoception", "proprioception", "facial recognition", "fine motor control"],
+          "description": "The work registers the visitor's non-touch physical movements as input"
+        }
+      }
+    }
+  },
+  "required": ["workInformation"]
+}
