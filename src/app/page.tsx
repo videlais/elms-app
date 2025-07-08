@@ -43,14 +43,15 @@ export default function Home() {
   const sections = [
     'workInformation',
     'versionInformation',
-    'accessibilityInformation'
+    'accessibilityInformation',
+    'artificialIntelligenceDisclosure'
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
         <div className="bg-white shadow-lg rounded-lg p-8 mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">
             ELMS 3.0 Variant Submission Demo
           </h1>
           <p className="text-gray-600 mb-6">
@@ -98,16 +99,16 @@ export default function Home() {
             </div>
             
             <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold mb-4">Combined Form Data</h3>
+              <h3 className="text-lg font-semibold mb-8">Combined Form Data</h3>
               
               {validationErrors && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-md">
                   <h4 className="font-medium text-red-800 mb-2">Validation Errors:</h4>
                   <pre className="text-sm text-red-700 whitespace-pre-wrap">{validationErrors}</pre>
                 </div>
               )}
               
-              <div className="flex gap-4 mb-4">
+              <div className="flex gap-4 mb-8">
                 <button
                   onClick={() => handleFormSubmit(formData)}
                   className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
